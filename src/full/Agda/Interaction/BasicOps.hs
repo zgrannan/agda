@@ -357,11 +357,17 @@ data OutputConstraint a b
       | PostponedCheckFunDef QName a
   deriving (Functor)
 
+instance Show (OutputConstraint a b) where
+  show o = "OutputConstraint"
+
 -- | A subset of 'OutputConstraint'.
 
 data OutputConstraint' a b = OfType' { ofName :: b
                                      , ofExpr :: a
                                      }
+
+instance Show (OutputConstraint' a b) where
+  show o = "OutputConstraint'"
 
 outputFormId :: OutputForm a b -> b
 outputFormId (OutputForm _ _ o) = out o

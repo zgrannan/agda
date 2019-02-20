@@ -12,6 +12,8 @@ import Prelude hiding ( (<>), null )
 import Prelude hiding ( null )
 #endif
 
+import Debug.Trace (trace)
+
 import Data.IORef
 import Data.Functor
 import Data.Maybe
@@ -301,15 +303,19 @@ instance Pretty TypedBinding where
     pretty (TBind _ xs (Underscore _ Nothing)) =
       fsep (map (pretty . NamedBinding True) xs)
     pretty (TBind _ xs e) = fsep
-      [ prettyRelevance y $ prettyHiding y parens $
+      [ prettyRelevance y $ prettyHiding y parens' $
         sep [ fsep (map (pretty . NamedBinding False) ys)
-            , ":" <+> pretty e ]
+            , addColon $ pretty e ]
       | ys@(y : _) <- groupBinds xs ]
       where
+        (parens', addColon) =
+          if all (not . isLabeled) xs
+          then (id, id)
+          else (parens, (":" <+>))
         groupBinds [] = []
         groupBinds (x : xs)
-          | isLabeled x = [x] : groupBinds xs
-          | otherwise   = (x : ys) : groupBinds zs
+          | isLabeled x = trace "Labeled " $ [x] : groupBinds xs
+          | otherwise   = trace "Not Labeled" $ (x : ys) : groupBinds zs
           where (ys, zs) = span (same x) xs
                 same x y = getArgInfo x == getArgInfo y && not (isLabeled y)
 
