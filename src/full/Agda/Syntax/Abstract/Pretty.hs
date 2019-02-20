@@ -7,8 +7,6 @@ import Agda.Syntax.Translation.AbstractToConcrete
 import Agda.TypeChecking.Monad
 import Agda.Utils.Pretty
 
-import Debug.Trace (trace)
-
 showA :: (Show c, ToConcrete a c) => a -> TCM String
 showA x = show <$> abstractToConcrete_ x
 
@@ -25,5 +23,5 @@ showATop x = show <$> abstractToConcreteCtx TopCtx x
 
 -- | Variant of 'prettyA' which does not insert outermost parentheses.
 
-prettyATop :: (Show a, Pretty c, ToConcrete a c) => a -> TCM Doc
-prettyATop x = trace ("Render " ++ show x) $ pretty <$> abstractToConcreteCtx TopCtx x
+prettyATop :: (Pretty c, ToConcrete a c) => a -> TCM Doc
+prettyATop x = pretty <$> abstractToConcreteCtx TopCtx x

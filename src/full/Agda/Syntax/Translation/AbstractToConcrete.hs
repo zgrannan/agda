@@ -30,7 +30,6 @@ import Control.Applicative hiding (empty)
 import Control.Monad.Reader
 import Control.Monad.State
 
-import Debug.Trace (trace)
 import Data.Either
 import qualified Data.Map as Map
 import Data.Maybe
@@ -676,12 +675,12 @@ instance ToConcrete A.Expr C.Expr where
               decl2clause _ = __IMPOSSIBLE__
           C.ExtendedLam (getRange i) <$> mapM decl2clause decls
     toConcrete (A.Pi _ [] e) = toConcrete e
-    toConcrete t@(A.Pi i _ _)  = trace "ToConcrete" $ case piTel t of
+    toConcrete t@(A.Pi i _ _)  = case piTel t of
       (tel, e) ->
         bracket piBrackets
         $ bindToConcrete tel $ \ tel' -> do
              e' <- toConcreteTop e
-             return $ C.Pi (trace ("tel': " ++ show tel') tel') e'
+             return $ C.Pi tel' e'
       where
         piTel (A.Pi _ tel e) = (tel ++) -*- id $ piTel e
         piTel e              = ([], e)
@@ -794,7 +793,7 @@ instance ToConcrete A.TypedBinding C.TypedBinding where
     bindToConcrete (A.TBind r xs e) ret =
         bindToConcrete (map forceNameIfHidden xs) $ \ xs -> do
         e <- toConcreteTop e
-        ret $ C.TBind r (trace ("xs in TBind: " ++ show xs) xs) e
+        ret $ C.TBind r xs e
     bindToConcrete (A.TLet r lbs) ret =
         bindToConcrete lbs $ \ ds -> do
         ret $ C.TLet r $ concat ds

@@ -12,8 +12,6 @@ import Prelude hiding ( (<>), null )
 import Prelude hiding ( null )
 #endif
 
-import Debug.Trace (trace)
-
 import Data.IORef
 import Data.Functor
 import Data.Maybe
@@ -314,8 +312,8 @@ instance Pretty TypedBinding where
           else (parens, (":" <+>))
         groupBinds [] = []
         groupBinds (x : xs)
-          | isLabeled x = trace "Labeled " $ [x] : groupBinds xs
-          | otherwise   = trace "Not Labeled" $ (x : ys) : groupBinds zs
+          | isLabeled x = [x] : groupBinds xs
+          | otherwise   = (x : ys) : groupBinds zs
           where (ys, zs) = span (same x) xs
                 same x y = getArgInfo x == getArgInfo y && not (isLabeled y)
 
