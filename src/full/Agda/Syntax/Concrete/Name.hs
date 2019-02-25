@@ -159,8 +159,8 @@ nameToRawName = prettyShow
 
 nameParts :: Name -> [NamePart]
 nameParts (RecordName {}) = [Id "r"]
-nameParts (Name _ _ ps) = ps
-nameParts (NoName _ _)  = [Id "_"] -- To not return an empty list
+nameParts (Name _ _ ps)   = ps
+nameParts (NoName _ _)    = [Id "_"] -- To not return an empty list
 
 nameStringParts :: Name -> [RawName]
 nameStringParts n = [ s | Id s <- nameParts n ]
@@ -424,7 +424,7 @@ instance Show QName where
 ------------------------------------------------------------------------
 
 instance Pretty Name where
-  pretty (RecordName _ i) = text $ if (i == 0 ) then "r" else addSuffix "r" (Subscript i)
+  pretty (RecordName _ i) = text $ if (i == 0) then "r" else addSuffix "r" (Subscript i)
   pretty (Name _ _ xs)    = hcat $ map pretty xs
   pretty (NoName _ _)     = "_"
 
@@ -447,8 +447,8 @@ instance Pretty TopLevelModuleName where
 
 instance HasRange Name where
     getRange (RecordName r _) = r
-    getRange (Name r _ ps)  = r
-    getRange (NoName r _)   = r
+    getRange (Name r _ ps)    = r
+    getRange (NoName r _)     = r
 
 instance HasRange QName where
     getRange (QName  x) = getRange x
@@ -474,9 +474,9 @@ instance KillRange QName where
   killRange (Qual n x) = killRange n `Qual` killRange x
 
 instance KillRange Name where
-  killRange (RecordName r i)  = RecordName (killRange r) i
-  killRange (Name r nis ps) = Name (killRange r) nis ps
-  killRange (NoName r i)    = NoName (killRange r) i
+  killRange (RecordName r i) = RecordName (killRange r) i
+  killRange (Name r nis ps)  = Name (killRange r) nis ps
+  killRange (NoName r i)     = NoName (killRange r) i
 
 instance KillRange TopLevelModuleName where
   killRange (TopLevelModuleName _ x) = TopLevelModuleName noRange x
