@@ -108,7 +108,7 @@ nelims e (I.Apply arg : es) = do
          | otherwise                     = A.App defaultAppInfo_ e arg
   nelims hd es
 nelims e (I.Proj ProjPrefix d : es)             = nelimsProjPrefix e d es
-nelims e (I.Proj o          d : es) | isSelf e  = nelimsProjPrefix e d es
+nelims e (I.Proj o          d : es) | isSelf e  = nelims (A.Proj ProjPrefix $ unambiguous d) es
                                     | otherwise =
   nelims (A.App defaultAppInfo_ e (defaultNamedArg $ A.Proj o $ unambiguous d)) es
 
@@ -124,7 +124,7 @@ nelimsProjPrefix e d es =
 --   We love hacks, don't we?  Sigh.
 isSelf :: Expr -> Bool
 isSelf = \case
-  A.Var x -> null $ prettyShow x
+  A.Var (Name _ C.RecordName{} _ _) -> True
   _ -> False
 
 -- | Drops hidden arguments unless --show-implicit.

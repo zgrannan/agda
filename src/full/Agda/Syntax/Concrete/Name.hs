@@ -386,6 +386,7 @@ instance IsNoName ByteString where
   isNoName = isUnderscore
 
 instance IsNoName Name where
+  isNoName (RecordName _ _ ) = True
   isNoName (NoName _ _)      = True
   isNoName (Name _ _ [Hole]) = True   -- TODO: Track down where these come from
   isNoName (Name _ _ [])     = True
