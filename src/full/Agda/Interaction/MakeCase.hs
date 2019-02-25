@@ -124,7 +124,7 @@ parseVariables f tel ii rng ss = do
       -- Jesper, 2018-12-19: Don't consider generalizable names since
       -- they can be shadowed by hidden variables.
       let kinds = List.delete GeneralizeName allKindsOfNames
-          cname = C.QName $ C.Name r C.InScope $ C.stringNameParts s
+          cname = C.QName $ C.Name r C.InScope $ C.NameParts $ C.stringNameParts s
       -- Note: the range in the concrete name is only approximate.
       resName <- resolveName' kinds Nothing cname
       case resName of

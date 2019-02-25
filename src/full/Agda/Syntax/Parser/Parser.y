@@ -511,7 +511,7 @@ ModuleName : QId { $1 }
 -- A binding variable. Can be '_'
 BId :: { Name }
 BId : Id    { $1 }
-    | '_'   { Name (getRange $1) InScope [Hole] }
+    | '_'   { Name (getRange $1) InScope (NameParts [Hole]) }
 
 {- UNUSED
 -- A binding variable. Can be '_'
@@ -575,7 +575,7 @@ BIdsWithHiding : Application {%
     let -- interpret an expression as name
         getName :: Expr -> Maybe Name
         getName (Ident (QName x)) = Just x
-        getName (Underscore r _)  = Just (Name r InScope [Hole])
+        getName (Underscore r _)  = Just (Name r InScope (NameParts [Hole]))
         getName _                 = Nothing
 
         getNames :: Expr -> Maybe [Name]
@@ -585,7 +585,7 @@ BIdsWithHiding : Application {%
         -- interpret an expression as name or list of hidden names
         getName1 :: Expr -> Maybe [Arg Name]
         getName1 (Ident (QName x)) = Just [defaultArg x]
-        getName1 (Underscore r _)  = Just [defaultArg $ Name r InScope [Hole]]
+        getName1 (Underscore r _)  = Just [defaultArg $ Name r InScope (NameParts [Hole])]
         getName1 (HiddenArg _ (Named Nothing e))
                                    = map (setHiding Hidden . defaultArg) `fmap` getNames e
         getName1 _                 = Nothing
@@ -1347,7 +1347,7 @@ UnquoteDecl
 Syntax :: { Declaration }
 Syntax : 'syntax' Id HoleNames '=' SimpleIds  {%
   case $2 of
-    Name _ _ [_] -> case mkNotation $3 $5 of
+    Name _ _ (NameParts [_]) -> case mkNotation $3 $5 of
       Left err -> parseError $ "Malformed syntax declaration: " ++ err
       Right n -> return $ Syntax $2 n
     _ -> parseError "Syntax declarations are allowed only for simple names (without holes)"
@@ -1417,7 +1417,7 @@ Open : MaybeOpen 'import' ModuleName OpenArgs ImportDirective {%
          -- which is absolute and messes up suite of failing tests
          -- (different hashs on different installations)
          -- TODO: Don't use (insecure) hashes in this way.
-    ; fresh = Name mr NotInScope [ Id $ stringToRawName $ ".#" ++ prettyShow m ++ "-" ++ show unique ]
+    ; fresh = Name mr NotInScope (NameParts [ Id $ stringToRawName $ ".#" ++ prettyShow m ++ "-" ++ show unique ])
     ; impStm asR = Import r m (Just (AsName (Right fresh) asR)) DontOpen defaultImportDir
     ; appStm m' es =
         Private r Inserted
@@ -1428,7 +1428,7 @@ Open : MaybeOpen 'import' ModuleName OpenArgs ImportDirective {%
           ]
     ; (initArgs, last2Args) = splitAt (length es - 2) es
     ; parseAsClause = case last2Args of
-      { [ Ident (QName (Name asR InScope [Id x]))
+      { [ Ident (QName (Name asR InScope (NameParts [Id x])))
         , e
           -- Andreas, 2018-11-03, issue #3364, accept anything after 'as'
           -- but require it to be a 'Name' in the scope checker.
@@ -1930,7 +1930,7 @@ mkName (i, s) = do
     let xs = C.stringNameParts s
     mapM_ isValidId xs
     unless (alternating xs) $ parseError $ "a name cannot contain two consecutive underscores"
-    return $ Name (getRange i) InScope xs
+    return $ Name (getRange i) InScope (NameParts xs)
     where
         isValidId Hole   = return ()
         isValidId (Id y) = do
@@ -2070,7 +2070,7 @@ boundNamesOrAbsurd es
   where
     getName :: Expr -> Maybe Name
     getName (Ident (QName x)) = Just x
-    getName (Underscore r _)  = Just $ Name r NotInScope [Hole]
+    getName (Underscore r _)  = Just $ Name r NotInScope (NameParts [Hole])
     getName _                 = Nothing
 
     getBName :: Expr -> Maybe BoundName
@@ -2097,7 +2097,7 @@ buildDoStmt (RawApp r es) cs
               <*> pure (RawApp (getRange es2) es2)
               <*> pure cs
   where
-    isLeftArrow (Ident (QName (Name _ _ [Id arr]))) = elem arr ["<-", "←"]
+    isLeftArrow (Ident (QName (Name _ _ (NameParts [Id arr])))) = elem arr ["<-", "←"]
     isLeftArrow _ = False
 buildDoStmt e (_ : _) = parseError' (rStart' $ getRange e) "Only pattern matching do-statements can have where clauses."
 buildDoStmt e [] = return $ DoThen e

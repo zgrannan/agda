@@ -600,7 +600,7 @@ defineProjections dataname con params names fsT t = do
 
 
 freshAbstractQName'_ :: String -> TCM QName
-freshAbstractQName'_ s = freshAbstractQName noFixity' (C.Name noRange C.InScope [C.Id $ s])
+freshAbstractQName'_ s = freshAbstractQName noFixity' (C.Name noRange C.InScope $ C.NameParts [C.Id $ s])
 
 
 defineTranspForFields

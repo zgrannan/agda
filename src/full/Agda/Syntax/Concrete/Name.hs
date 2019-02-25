@@ -45,11 +45,14 @@ import Agda.Utils.Impossible
     Equality and ordering on @Name@s are defined to ignore range so same names
     in different locations are equal.
 -}
+
+newtype NameParts = NameParts [NamePart]
+  deriving (Data, Pretty, NFData, NumHoles, Ord, Eq)
 data Name
   = Name -- ^ A (mixfix) identifier.
     { nameRange     :: Range
     , nameInScope   :: NameInScope
-    , nameNameParts :: [NamePart]
+    , nameNameParts :: NameParts
     }
   | NoName -- ^ @_@.
     { nameRange     :: Range
@@ -67,13 +70,13 @@ data Name
 
 isOpenMixfix :: Name -> Bool
 isOpenMixfix n = case n of
-  Name _ _ (x : xs@(_:_)) -> x == Hole || last xs == Hole
+  Name _ _ (NameParts (x : xs@(_:_))) -> x == Hole || last xs == Hole
   _                       -> False
 
 instance Underscore Name where
   underscore = NoName noRange __IMPOSSIBLE__
   isUnderscore NoName{} = True
-  isUnderscore (Name {nameNameParts = [Id x]}) = isUnderscore x
+  isUnderscore (Name {nameNameParts = NameParts [Id x]}) = isUnderscore x
   isUnderscore _ = False
 
 -- | Mixfix identifiers are composed of words and holes,
@@ -159,7 +162,7 @@ nameToRawName = prettyShow
 
 nameParts :: Name -> [NamePart]
 nameParts (RecordName {}) = [Id "r"]
-nameParts (Name _ _ ps) = ps
+nameParts (Name _ _ (NameParts ps)) = ps
 nameParts (NoName _ _)  = [Id "_"] -- To not return an empty list
 
 nameStringParts :: Name -> [RawName]
@@ -197,7 +200,7 @@ instance NumHoles QName where
 isOperator :: Name -> Bool
 isOperator (NoName {})     = False
 isOperator (RecordName {}) = False
-isOperator (Name _ _ ps)   = length ps > 1
+isOperator (Name _ _ (NameParts ps))   = length ps > 1
 
 isHole :: NamePart -> Bool
 isHole Hole = True
@@ -255,7 +258,7 @@ instance LensInScope QName where
 nextName :: Name -> Name
 nextName (RecordName r n) = RecordName r (n + 1)
 nextName NoName{} = __IMPOSSIBLE__
-nextName x@Name{ nameNameParts = ps } = x { nameInScope = NotInScope, nameNameParts = nextSuf ps }
+nextName x@Name{ nameNameParts = (NameParts ps) } = x { nameInScope = NotInScope, nameNameParts = NameParts $ nextSuf ps }
   where
     nextSuf [Id s]       = [Id $ nextStr s]
     nextSuf [Id s, Hole] = [Id $ nextStr s, Hole]
@@ -278,9 +281,11 @@ firstNonTakenName taken x =
 nameRoot :: Name -> RawName
 nameRoot RecordName{} = "r"
 nameRoot NoName{} = __IMPOSSIBLE__
-nameRoot x@Name{ nameNameParts = ps } =
-    nameToRawName $ x{ nameNameParts = root ps }
+nameRoot x@Name{ nameNameParts = ps' } =
+    nameToRawName $ x{ nameNameParts = NameParts $ root ps }
   where
+    ps = case ps' of
+      NameParts p -> p
     root [Id s] = [Id $ strRoot s]
     root [Id s, Hole] = [Id $ strRoot s , Hole]
     root (p : ps) = p : root ps
@@ -387,9 +392,9 @@ instance IsNoName ByteString where
 
 instance IsNoName Name where
   isNoName (NoName _ _)      = True
-  isNoName (Name _ _ [Hole]) = True   -- TODO: Track down where these come from
-  isNoName (Name _ _ [])     = True
-  isNoName (Name _ _ [Id x]) = isNoName x
+  isNoName (Name _ _ (NameParts [Hole])) = True   -- TODO: Track down where these come from
+  isNoName (Name _ _ (NameParts []))     = True
+  isNoName (Name _ _ (NameParts [Id x]))  = isNoName x
   isNoName _                 = False
 
 instance IsNoName QName where
@@ -425,7 +430,7 @@ instance Show QName where
 
 instance Pretty Name where
   pretty (RecordName _ i) = text $ if (i == 0 ) then "r" else addSuffix "r" (Subscript i)
-  pretty (Name _ _ xs)    = hcat $ map pretty xs
+  pretty (Name _ _ (NameParts xs))    = hcat $ map pretty xs
   pretty (NoName _ _)     = "_"
 
 instance Pretty NamePart where

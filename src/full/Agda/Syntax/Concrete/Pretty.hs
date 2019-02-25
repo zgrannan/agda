@@ -647,7 +647,7 @@ prettyOpApp q es = merge [] $ prOp ms xs es
     -- xs: the concrete name (alternation of @Id@ and @Hole@)
     xs = case unqualify q of
            RecordName{} -> [Id "r"]
-           Name _ _ xs -> xs
+           Name _ _ (NameParts xs) -> xs
            NoName{}    -> __IMPOSSIBLE__
 
     prOp :: [Name] -> [NamePart] -> [NamedArg (MaybePlaceholder a)] -> [(Doc, Maybe PositionInName)]
@@ -657,7 +657,7 @@ prettyOpApp q es = merge [] $ prOp ms xs es
         NoPlaceholder{} -> (pretty e, Nothing) : prOp ms xs es
           -- Module qualifier needs to go on section holes (#3072)
     prOp _  (Hole : _)  []       = __IMPOSSIBLE__
-    prOp ms (Id x : xs) es       = ( qual ms $ pretty $ Name noRange InScope $ [Id x]
+    prOp ms (Id x : xs) es       = ( qual ms $ pretty $ Name noRange InScope $ (NameParts [Id x])
                                    , Nothing
                                    ) : prOp [] xs es
       -- Qualify the name part with the module.

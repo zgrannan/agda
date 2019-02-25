@@ -141,7 +141,7 @@ parse (ParseSections,      p) es = P.parse p (concat $ map splitExpr es)
     noSplit = [noPlaceholder e]
 
     splitName n = case last ns of
-      Name r nis ps@(_ : _ : _) -> splitParts r nis (init ns) Beginning ps
+      Name r nis (NameParts ps@(_ : _ : _)) -> splitParts r nis (init ns) Beginning ps
       _                         -> noSplit
       where
       ns = qnameParts n
@@ -162,7 +162,7 @@ parse (ParseSections,      p) es = P.parse p (concat $ map splitExpr es)
       part r nis m w s =
         NoPlaceholder (Strict.Just w)
                       (unExprView $ LocalV $
-                         foldr Qual (QName (Name r nis [Id s])) m)
+                         foldr Qual (QName (Name r nis (NameParts [Id s]))) m)
 
 ---------------------------------------------------------------------------
 -- * Parser combinators
@@ -177,7 +177,7 @@ partP ms s =
   doc (text (show str)) $
   satNoPlaceholder isLocal
   where
-  str = prettyShow $ foldr Qual (QName $ Name noRange InScope [Id s]) ms
+  str = prettyShow $ foldr Qual (QName $ Name noRange InScope (NameParts [Id s])) ms
   isLocal e = case exprView e of
       LocalV y | str == prettyShow y -> Just $ getRange y
       _ -> Nothing
@@ -194,7 +194,7 @@ atLeastTwoParts =
   (\p1 ps p2 ->
       let all = p1 : ps ++ [p2] in
       case mapMaybe fst all of
-        (r,nis) : _ -> Name r nis (map snd all)
+        (r,nis) : _ -> Name r nis (NameParts (map snd all))
         []          -> __IMPOSSIBLE__)
   <$> part Beginning
   <*> many (part Middle)
@@ -206,7 +206,7 @@ atLeastTwoParts =
                                                              )
     NoPlaceholder (Strict.Just pos') e | pos == pos' ->
       case exprView e of
-        LocalV (QName (Name r nis [Id s])) -> Just (Just (r,nis), Id s)
+        LocalV (QName (Name r nis (NameParts [Id s]))) -> Just (Just (r,nis), Id s)
         _                                  -> Nothing
     _ -> Nothing
 
@@ -313,13 +313,13 @@ opP parseSections p (NewNotation q names _ syn isOp) kind =
             p
       <*> worker ms xs
   worker ms (WildHole h : xs) =
-    (\(r, es) -> (r, Right (mkBinding h $ Name noRange InScope [Hole]) : es))
+    (\(r, es) -> (r, Right (mkBinding h $ Name noRange InScope (NameParts [Hole])) : es))
       <$> worker ms xs
   worker ms (BindHole _ h : xs) = do
     (\e (r, es) ->
         let x = case e of
                   Just name -> name
-                  Nothing   -> Name noRange InScope [Hole]
+                  Nothing   -> Name noRange InScope (NameParts [Hole])
         in (r, Right (mkBinding h x) : es))
            -- Andreas, 2011-04-07 put just 'Relevant' here, is this
            -- correct?

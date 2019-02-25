@@ -288,6 +288,10 @@ instance EmbPrj SerialisedRange where
     valu [a, b] = SerialisedRange <$> valuN P.intervalsToRange a b
     valu _      = malformed
 
+instance EmbPrj C.NameParts where
+  icod_ (NameParts xs) = icod_ xs
+  value _ = malformed -- TODO
+
 instance EmbPrj C.Name where
   icod_ (C.NoName a b)       = icodeN 0 C.NoName a b
   icod_ (C.Name r nis xs)    = icodeN 1 C.Name r nis xs

@@ -207,7 +207,7 @@ unsafeQNameToName = C.unqualify
 
 lookupQName :: AllowAmbiguousNames -> A.QName -> AbsToCon C.QName
 lookupQName ambCon x | Just s <- getGeneralizedFieldName x =
-  return (C.QName $ C.Name noRange C.InScope $ C.stringNameParts s)
+  return (C.QName $ C.Name noRange C.InScope $ (NameParts (C.stringNameParts s)))
 lookupQName ambCon x = do
   ys <- inverseScopeLookupName' ambCon x <$> asks currentScope
   lift $ reportSLn "scope.inverse" 100 $
@@ -226,7 +226,7 @@ lookupQName ambCon x = do
       qy@C.QName{} -> C.QName <$> chooseName (qnameName x)
 
 lookupModule :: A.ModuleName -> AbsToCon C.QName
-lookupModule (A.MName []) = return $ C.QName $ C.Name noRange InScope [Id "-1"]
+lookupModule (A.MName []) = return $ C.QName $ C.Name noRange InScope (NameParts [Id "-1"])
   -- Andreas, 2016-10-10 it can happen that we have an empty module name
   -- for instance when we query the current module inside the
   -- frontmatter or module telescope of the top level module.

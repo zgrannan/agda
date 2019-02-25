@@ -25,6 +25,8 @@ import Data.Set (Set)
 import qualified Data.Set as Set
 import Data.Void
 
+import Debug.Trace (trace)
+
 import Agda.Syntax.Position
 import Agda.Syntax.Common
 import {-# SOURCE #-} Agda.Syntax.Fixity
@@ -174,7 +176,8 @@ class MkName a where
   mkName_ = mkName noRange
 
 instance MkName String where
-  mkName r i s = Name i (C.Name noRange InScope (C.stringNameParts s)) r noFixity'
+  mkName r i "" = trace ("Making a record name ") $ Name i (C.RecordName noRange 0) r noFixity'
+  mkName r i s = trace ("Make a name for" ++ s) $ Name i (C.Name noRange InScope $ C.NameParts (C.stringNameParts s)) r noFixity'
 
 
 qnameToList :: QName -> [Name]
