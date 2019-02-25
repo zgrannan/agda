@@ -116,12 +116,8 @@ nelimsProjPrefix :: Expr -> QName -> [I.Elim' (Named_ Expr)] -> TCM Expr
 nelimsProjPrefix e d es =
   nelims (A.App defaultAppInfo_ (A.Proj ProjPrefix $ unambiguous d) $ defaultNamedArg e) es
 
--- | If we are inside a record definition, the record value (self)
---   is a variable with name "".
---   In this case, we need to use a prefix-projection.  (Issue #2868.)
---   Prefix projections magically print correctly since the thing
---   we are projecting from has a null name, so vanishes in the visible world.
---   We love hacks, don't we?  Sigh.
+-- | If we are referencing the record from inside the record definition, we don't insert an
+-- | A.App
 isSelf :: Expr -> Bool
 isSelf = \case
   A.Var (Name _ C.RecordName{} _ _) -> True
