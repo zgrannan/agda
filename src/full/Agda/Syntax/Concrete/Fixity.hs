@@ -16,6 +16,8 @@ import Data.Set (Set)
 import qualified Data.Set as Set
 import Data.Semigroup
 
+import Debug.Trace (trace)
+
 import Agda.Syntax.Common
 import Agda.Syntax.Position
 import Agda.Syntax.Fixity
@@ -116,7 +118,7 @@ fixitiesAndPolarities doWarn ds = do
 
   -- If we have names in fixity declarations which are not defined in the
   -- appropriate scope, raise a warning and delete them from fixs.
-  fixs <- ifNull (Map.keysSet fixs Set.\\ declared) (return fixs) $ \ unknownFixs -> do
+  fixs <- ifNull (trace ("Fixities are " ++ show fixs) $ Map.keysSet fixs Set.\\ declared) (return fixs) $ \ unknownFixs -> do
     when (doWarn == DoWarn) $ warnUnknownNamesInFixityDecl $ Set.toList unknownFixs
     -- Note: Data.Map.restrictKeys requires containers >= 0.5.8.2
     -- return $ Map.restrictKeys fixs declared
@@ -145,7 +147,6 @@ fixitiesInImportDirective :: MonadFixityError m => ImportDirective -> MonadicFix
 fixitiesInImportDirective (ImportDirective _ _ _ renaming _) =
   returnFix $ Map.fromList $ mapMaybe extractFixity renaming
   where
-    extractFixity (Renaming (ImportedName n) _ _ (Just f))  = Just (n, undefined)
     extractFixity _                                         = Nothing
 
 

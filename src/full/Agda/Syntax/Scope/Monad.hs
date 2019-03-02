@@ -22,6 +22,8 @@ import qualified Data.Set as Set
 import Data.Foldable (any, all)
 import Data.Traversable hiding (for)
 
+import Debug.Trace (trace)
+
 import Agda.Syntax.Common
 import Agda.Syntax.Position
 import Agda.Syntax.Fixity
@@ -370,7 +372,7 @@ bindName acc kind x y = bindName' acc kind NoMetadata x y
 bindName' :: Access -> KindOfName -> NameMetadata -> C.Name -> A.QName -> ScopeM ()
 bindName' acc kind meta x y = do
   when (isNoName x) $ modifyScopes $ Map.map $ removeNameFromScope PrivateNS x
-  r  <- resolveName (C.QName x)
+  r  <- trace ("Bind name" ++ show x ++ " (" ++ show y ++ ")") resolveName (C.QName x)
   ys <- case r of
     -- Binding an anonymous declaration always succeeds.
     -- In case it's not the first one, we simply remove the one that came before
@@ -384,7 +386,7 @@ bindName' acc kind meta x y = do
   let ns = if isNoName x then PrivateNS else localNameSpace acc
   modifyCurrentScope $ addNamesToScope ns x ys
   where
-    success = return [ AbsName y kind Defined meta ]
+    success = return [ AbsName y kind Defined meta Nothing ]
     clash   = typeError . ClashingDefinition (C.QName x)
 
     ambiguous k ds =
