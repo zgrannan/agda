@@ -54,6 +54,8 @@ import qualified Agda.Utils.Map as Map
 #include "undefined.h"
 import Agda.Utils.Impossible
 
+import Debug.Trace (trace)
+
 -- * Scope representation
 
 -- | A scope is a named collection of names partitioned into public and private
@@ -295,6 +297,7 @@ data AbstractName = AbsName
   , anameMetadata :: NameMetadata
     -- ^ Additional information needed during scope checking. Currently used
     --   for generalized data/record params.
+  , fixity :: Maybe Fixity
   }
   deriving (Data, Show)
 
@@ -671,7 +674,9 @@ renameCanonicalNames :: Map A.QName A.QName -> Map A.ModuleName A.ModuleName ->
                         Scope -> Scope
 renameCanonicalNames renD renM = mapScope_ renameD renameM (Set.map newName)
   where
-    newName x = Map.findWithDefault x x renD
+    newName x =
+      let r = Map.findWithDefault x x renD
+      in trace ("Renaming " ++ show x ++ " to " ++ show r) r
     newMod  x = Map.findWithDefault x x renM
 
     renameD = Map.map $ map $ over lensAnameName newName

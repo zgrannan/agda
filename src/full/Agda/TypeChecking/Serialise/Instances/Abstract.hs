@@ -76,7 +76,7 @@ instance EmbPrj WhyInScope where
     valu _         = malformed
 
 instance EmbPrj AbstractName where
-  icod_ (AbsName a b c d) = icodeN' AbsName a b c d
+  icod_ (AbsName a b c d e) = icodeN' AbsName a b c d e
 
   value = valueN AbsName
 
