@@ -30,6 +30,8 @@ import Control.Applicative
 import Control.Arrow (second)
 import Control.Monad.Reader hiding (mapM)
 
+import Debug.Trace (trace) 
+
 import Data.Foldable (Foldable, traverse_)
 import Data.Traversable (mapM, traverse)
 import Data.List ((\\), nub, foldl')
@@ -1226,8 +1228,10 @@ instance ToAbstract (TopLevel [C.Declaration]) TopLevelInfo where
 -- | runs Syntax.Concrete.Definitions.niceDeclarations on main module
 niceDecls :: DoWarn -> [C.Declaration] -> ([NiceDeclaration] -> ScopeM a) -> ScopeM a
 niceDecls warn ds ret = setCurrentRange ds $ computeFixitiesAndPolarities warn ds $ do
-  fixs <- scopeFixities <$> getScope  -- We need to pass the fixities to the nicifier for clause grouping
-  let (result, warns') = runNice $ niceDeclarations fixs ds
+  s <- getScope
+  let fixs = scopeFixities s -- We need to pass the fixities to the nicifier for clause grouping
+  let importFixes = trace ("Scope inv name: " ++ (show $ scopeInverseName s)) $ getImportFixities s -- We need to pass the fixities to the nicifier for clause grouping
+  let (result, warns') = trace ("Import fixities on " ++ show ds ++ ": " ++ show importFixes) $ runNice $ niceDeclarations (Map.union importFixes fixs) ds
 
   -- COMPILED pragmas are not allowed in safe mode unless we are in a builtin module.
   -- So we start by filtering out all the PragmaCompiled warnings if one of these two
@@ -2489,7 +2493,7 @@ toAbstractOpArg ctx (SyntaxBindingLambda r bs e) = toAbstractLam r bs e ctx
 toAbstractOpApp :: C.QName -> Set A.Name ->
                    [NamedArg (MaybePlaceholder (OpApp C.Expr))] ->
                    ScopeM A.Expr
-toAbstractOpApp op ns es = do
+toAbstractOpApp op ns es = trace ("toAbstractOpApp op: " ++ show op ++ ", ns: " ++ show ns ++ ", es: " ++ show es) $ do
     -- Replace placeholders with bound variables.
     (binders, es) <- replacePlaceholders es
     -- Get the notation for the operator.

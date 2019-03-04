@@ -51,6 +51,8 @@ import Control.Applicative hiding (empty)
 import Control.Monad.Except
 import Control.Monad.State
 
+import Debug.Trace (trace) 
+
 import Data.Either ( partitionEithers )
 import Data.Function ( on )
 import qualified Data.Map as Map
@@ -762,7 +764,7 @@ replaceSigs ps = if Map.null ps then id else \case
 -- | Main. Fixities (or more precisely syntax declarations) are needed when
 --   grouping function clauses.
 niceDeclarations :: Fixities -> [Declaration] -> Nice [NiceDeclaration]
-niceDeclarations fixs ds = do
+niceDeclarations fixs ds = trace ("Running w/ fixities " ++ show fixs) $ do
 
   -- Run the nicifier in an initial environment. But keep the warnings.
   st <- get

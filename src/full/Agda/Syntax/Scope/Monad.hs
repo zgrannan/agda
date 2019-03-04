@@ -270,21 +270,23 @@ resolveName' kinds names x = do
       let filtKind = filter $ \ y -> anameKind (fst y) `elem` kinds
       -- Consider only names in the given set of names
           filtName = filter $ \ y -> maybe True (Set.member (aName (fst y))) names
-      caseListNe (filtKind $ filtName $ scopeLookup' x scope) (return UnknownName) $ \ case
+      caseListNe (filtKind $ filtName $ scopeLookup' x scope) (treturn UnknownName) $ \ case
         ds       | all ((ConName ==) . anameKind . fst) ds ->
-          return $ ConstructorName $ fmap (upd . fst) ds
+          treturn $ ConstructorName $ fmap (upd . fst) ds
 
         ds       | all ((FldName ==) . anameKind . fst) ds ->
-          return $ FieldName $ fmap (upd . fst) ds
+          treturn $ FieldName $ fmap (upd . fst) ds
 
         ds       | all ((PatternSynName ==) . anameKind . fst) ds ->
-          return $ PatternSynResName $ fmap (upd . fst) ds
+          treturn $ PatternSynResName $ fmap (upd . fst) ds
 
         (d, a) :! [] ->
-          return $ DefinedName a $ upd d
+          treturn $ DefinedName a $ upd d
 
         ds -> typeError $ AmbiguousName x (fmap (anameName . fst) ds)
   where
+  treturn v =
+    trace (show x ++ " is a " ++ show v ) $ return v
   upd d = updateConcreteName d $ unqualify x
   updateConcreteName :: AbstractName -> C.Name -> AbstractName
   updateConcreteName d@(AbsName { anameName = A.QName qm qn }) x =
@@ -300,7 +302,7 @@ resolveModule x = do
 
 -- | Get the fixity of a not yet bound name.
 getConcreteFixity :: C.Name -> ScopeM Fixity'
-getConcreteFixity x = Map.findWithDefault noFixity' x . scopeFixities <$> getScope
+getConcreteFixity x = trace ("Lookup fixity for " ++ show x) $ Map.findWithDefault noFixity' x . scopeFixities <$> getScope
 
 -- | Get the polarities of a not yet bound name.
 getConcretePolarity :: C.Name -> ScopeM (Maybe [Occurrence])
@@ -328,6 +330,15 @@ computeFixitiesAndPolarities warn ds ret = do
   x <- ret
   modifyScope $ \ s -> s { scopeFixities = fixs0, scopePolarities = pols0 }
   return x
+
+getImportFixities :: ScopeInfo -> Fixities
+getImportFixities s = Map.fromList $ do
+  scope <- map snd $ Map.toList $ scopeModules s
+  let namespace = allThingsInScope scope
+  (name, anames) <- trace "Check namespace" $ Map.toList $ nsNames namespace
+  aname <- trace ("Check anames for " ++ show name) anames
+  f <- trace ("Test Fixity: " ++ show aname) $ maybeToList $ Agda.Syntax.Scope.Base.fixity aname
+  return $ trace "GOT FIXITY!" $ (name, Fixity' f [] noRange)
 
 -- | Get the notation of a name. The name is assumed to be in scope.
 getNotation
@@ -372,7 +383,7 @@ bindName acc kind x y = bindName' acc kind NoMetadata x y
 bindName' :: Access -> KindOfName -> NameMetadata -> C.Name -> A.QName -> ScopeM ()
 bindName' acc kind meta x y = do
   when (isNoName x) $ modifyScopes $ Map.map $ removeNameFromScope PrivateNS x
-  r  <- trace ("Bind name" ++ show x ++ " (" ++ show y ++ ")") resolveName (C.QName x)
+  r  <- resolveName (C.QName x)
   ys <- case r of
     -- Binding an anonymous declaration always succeeds.
     -- In case it's not the first one, we simply remove the one that came before

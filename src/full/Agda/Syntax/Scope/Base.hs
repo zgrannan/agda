@@ -54,7 +54,7 @@ import qualified Agda.Utils.Map as Map
 #include "undefined.h"
 import Agda.Utils.Impossible
 
-import Debug.Trace (trace)
+import Debug.Trace (trace, traceStack)
 
 -- * Scope representation
 
@@ -658,12 +658,23 @@ applyImportDirective dir s = mergeScope usedOrHidden renamed
 
     -- Renaming
     rename :: [C.Renaming] -> Scope -> Scope
-    rename rho = mapScope_ (Map.mapKeys $ ren drho)
+    rename rho = mapScope_ mapNamesInScope
                            (Map.mapKeys $ ren mrho)
                            id
       where
+        mapNamesInScope ns =
+          Map.fromList $ map nsMapFunction $ Map.toList ns
+
+        nsMapFunction (k, abstractNames) =
+          case lookup k drho of
+            Just (newName, Just f) ->
+              trace ("Fixity " ++ show f ++ "for import " ++ show newName ++ ", abstract names:" ++ show abstractNames) $
+                (newName, map (\v -> v {Agda.Syntax.Scope.Base.fixity = Just f}) abstractNames)
+            Just (newName, Nothing) ->
+              (newName, abstractNames)
+            Nothing -> (k, abstractNames)
         (drho, mrho) = partitionEithers $ for rho $ \case
-          Renaming (ImportedName   x) (ImportedName   y) _ _ -> Left  (x,y)
+          Renaming (ImportedName   x) (ImportedName   y) _ f -> Left  (x,(y,f))
           Renaming (ImportedModule x) (ImportedModule y) _ _ -> Right (x,y)
           _ -> __IMPOSSIBLE__
 
@@ -854,7 +865,7 @@ scopeLookup' q scope =
 
     -- | Find a concrete, possibly qualified name in scope @s@.
     findName :: forall a. InScope a => C.QName -> Scope -> [(a, Access)]
-    findName q0 s = case q0 of
+    findName q0 s = (if ('∷' `elem` (show q0)) then (trace $ "FindName " ++ show q0) else id) $ case q0 of
       C.QName x  -> lookupName x s
       C.Qual x q -> do
         let -- | Get the modules named @x@ in scope @s@.
@@ -933,7 +944,7 @@ inverseScopeLookup :: Either A.ModuleName A.QName -> ScopeInfo -> [C.QName]
 inverseScopeLookup = inverseScopeLookup' AmbiguousConProjs
 
 inverseScopeLookup' :: AllowAmbiguousNames -> Either A.ModuleName A.QName -> ScopeInfo -> [C.QName]
-inverseScopeLookup' amb name scope = billToPure [ Scoping , InverseScopeLookup ] $
+inverseScopeLookup' amb name scope = trace ("Inverse lookup " ++ show name) $ billToPure [ Scoping , InverseScopeLookup ] $
   case name of
     Left  m -> best $ filter unambiguousModule $ findModule m
     Right q -> best $ filter unambiguousName   $ findName q

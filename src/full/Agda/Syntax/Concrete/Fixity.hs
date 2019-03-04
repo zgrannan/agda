@@ -116,14 +116,6 @@ fixitiesAndPolarities doWarn ds = do
   let DeclaredNames declared postulates privateNames = foldMap declaredNames ds
   let publicNames = declared Set.\\ privateNames
 
-  -- If we have names in fixity declarations which are not defined in the
-  -- appropriate scope, raise a warning and delete them from fixs.
-  fixs <- ifNull (trace ("Fixities are " ++ show fixs) $ Map.keysSet fixs Set.\\ declared) (return fixs) $ \ unknownFixs -> do
-    when (doWarn == DoWarn) $ warnUnknownNamesInFixityDecl $ Set.toList unknownFixs
-    -- Note: Data.Map.restrictKeys requires containers >= 0.5.8.2
-    -- return $ Map.restrictKeys fixs declared
-    return $ Map.filterWithKey (\ k _ -> Set.member k declared) fixs
-
   -- Same for undefined names in polarity declarations.
   pols <- ifNull (Map.keysSet pols Set.\\ declared) (return pols) $
     \ unknownPols -> do
