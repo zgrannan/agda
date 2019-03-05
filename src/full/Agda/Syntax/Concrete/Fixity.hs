@@ -139,6 +139,7 @@ fixitiesInImportDirective :: MonadFixityError m => ImportDirective -> MonadicFix
 fixitiesInImportDirective (ImportDirective _ _ _ renaming _) =
   returnFix $ Map.fromList $ mapMaybe extractFixity renaming
   where
+    extractFixity (Renaming (ImportedName n) _ _ (Just f))  = Just (n, undefined)
     extractFixity _                                         = Nothing
 
 
