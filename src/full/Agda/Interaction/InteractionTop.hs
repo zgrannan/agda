@@ -1391,7 +1391,7 @@ prettyContext
 prettyContext norm rev ii = B.withInteractionId ii $ do
   ctx <- B.contextOfMeta ii norm
   es  <- mapM (prettyATop . B.ofExpr) ctx
-  xs  <- mapM (abstractToConcrete_ . B.ofName) ctx
+  xs  <- mapM abstractToConcrete_ $ filter (not . nameIsSelf) $ map B.ofName ctx
   let ns = map (nameConcrete . B.ofName) ctx
       ss = map C.isInScope xs
   return $ align 10 $ applyWhen rev reverse $

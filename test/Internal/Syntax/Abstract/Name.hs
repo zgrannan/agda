@@ -17,7 +17,7 @@ import Test.QuickCheck
 instance Arbitrary Name where
   arbitrary =
     Name <$> arbitrary <*> arbitrary <*> arbitrary
-         <*> return noFixity'
+         <*> return noFixity' <*> arbitrary
 
 instance CoArbitrary Name where
   coarbitrary = coarbitrary . nameId

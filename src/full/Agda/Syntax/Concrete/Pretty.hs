@@ -646,9 +646,8 @@ prettyOpApp q es = merge [] $ prOp ms xs es
     ms = init (qnameParts q)
     -- xs: the concrete name (alternation of @Id@ and @Hole@)
     xs = case unqualify q of
-           RecordName _ n -> [Id n]
-           Name _ _ xs    -> xs
-           NoName{}       -> __IMPOSSIBLE__
+           Name _ _ xs -> xs
+           NoName{}    -> __IMPOSSIBLE__
 
     prOp :: [Name] -> [NamePart] -> [NamedArg (MaybePlaceholder a)] -> [(Doc, Maybe PositionInName)]
     prOp ms (Hole : xs) (e : es) =
