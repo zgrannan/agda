@@ -326,7 +326,8 @@ computeFixitiesAndPolarities :: DoWarn -> [C.Declaration] -> ScopeM a -> ScopeM 
 computeFixitiesAndPolarities warn ds ret = do
   (fixs0, pols0) <- (scopeFixities &&& scopePolarities) <$> getScope
   (fixs, pols)   <- fixitiesAndPolarities warn ds
-  modifyScope $ \ s -> s { scopeFixities = fixs, scopePolarities = pols }
+  modifyScope $ \ s -> s { scopeFixities = Map.unionWith undefined fixs fixs0, scopePolarities = pols }
+  
   x <- ret
   modifyScope $ \ s -> s { scopeFixities = fixs0, scopePolarities = pols0 }
   return x

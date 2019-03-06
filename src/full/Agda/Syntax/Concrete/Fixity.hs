@@ -88,7 +88,7 @@ instance MonadFixityError m => Semigroup (MonadicFixPol m) where
   c1 <> c2 = MonadicFixPol $ do
     (f1, p1) <- runMonadicFixPol c1
     (f2, p2) <- runMonadicFixPol c2
-    f <- plusFixities f1 f2
+    f <- trace ("add fixities f1: " ++ show f1 ++ "\nf2: " ++ show f2 ) $ plusFixities f1 f2
     p <- mergePolarities p1 p2
     return (f, p)
     where
@@ -139,7 +139,7 @@ fixitiesInImportDirective :: MonadFixityError m => ImportDirective -> MonadicFix
 fixitiesInImportDirective (ImportDirective _ _ _ renaming _) =
   returnFix $ Map.fromList $ mapMaybe extractFixity renaming
   where
-    extractFixity (Renaming (ImportedName n) _ _ (Just f))  = Just (n, undefined)
+    extractFixity (Renaming _ (ImportedName n) _ (Just f))  = Just (n, Fixity' f [] $ getRange n)
     extractFixity _                                         = Nothing
 
 
