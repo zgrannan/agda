@@ -9,6 +9,8 @@ module Agda.Interaction.BasicOps where
 
 import Prelude hiding (null)
 
+import Debug.Trace (trace)
+
 import Control.Arrow ((***), first, second)
 import Control.Applicative hiding (empty)
 import Control.Monad.Reader
@@ -55,7 +57,7 @@ import Agda.TypeChecking.Coverage
 import Agda.TypeChecking.Coverage.Match ( SplitPattern )
 import Agda.TypeChecking.Records
 import Agda.TypeChecking.Irrelevance (wakeIrrelevantVars)
-import Agda.TypeChecking.Pretty ( PrettyTCM, prettyTCM )
+import Agda.TypeChecking.Pretty ( PrettyTCM, prettyTCM, prettyTCM' )
 import Agda.TypeChecking.Primitive
 import Agda.TypeChecking.Names
 import Agda.TypeChecking.Free
@@ -212,7 +214,7 @@ refine
   -> Expr           -- ^ The expression to refine the hole with.
   -> TCM Expr       -- ^ The successfully given expression.
 refine force ii mr e = do
-  mi <- lookupInteractionId ii
+  mi <- trace "Do a refine" $ lookupInteractionId ii
   mv <- lookupMeta mi
   let range = fromMaybe (getRange mv) mr
       scope = M.getMetaScope mv
@@ -846,7 +848,7 @@ introTactic pmLambda ii = do
 
         case unEl t of
           I.Def d _ -> do
-            def <- getConstInfo d
+            def <- trace ("intro def") $ getConstInfo d
             case theDef def of
               Datatype{}    -> addContext tel' $ introData t
               Record{ recNamedCon = name }
@@ -862,7 +864,7 @@ introTactic pmLambda ii = do
     conName _   = __IMPOSSIBLE__
 
     showTCM :: PrettyTCM a => a -> TCM String
-    showTCM v = render <$> prettyTCM v
+    showTCM v = render <$> prettyTCM' AmbiguousNothing v
 
     introFun :: ListTel -> TCM [String]
     introFun tel = addContext tel' $ do

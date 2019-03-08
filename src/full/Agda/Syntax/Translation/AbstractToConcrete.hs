@@ -22,7 +22,10 @@ module Agda.Syntax.Translation.AbstractToConcrete
     , preserveInteractionIds
     , AbsToCon, Env
     , noTakenNames
+    , lookupQName
     ) where
+
+import Debug.Trace (trace, traceStack)
 
 import Prelude hiding (null)
 
@@ -207,12 +210,13 @@ unsafeQNameToName = C.unqualify
 
 lookupQName :: AllowAmbiguousNames -> A.QName -> AbsToCon C.QName
 lookupQName ambCon x | Just s <- getGeneralizedFieldName x =
-  return (C.QName $ C.Name noRange C.InScope $ C.stringNameParts s)
+  trace "Its a generalizedFieldName" $ return (C.QName $ C.Name noRange C.InScope $ C.stringNameParts s)
 lookupQName ambCon x = do
   ys <- inverseScopeLookupName' ambCon x <$> asks currentScope
   lift $ reportSLn "scope.inverse" 100 $
     "inverse looking up abstract name " ++ prettyShow x ++ " yields " ++ prettyShow ys
-  loop ys
+  r <- loop ys
+  return $ trace ("lookupQName " ++ show x ++ " is " ++ show r) r
 
   where
     -- Found concrete name: check that it is not shadowed by a local
@@ -540,6 +544,7 @@ instance ToConcrete BindName C.BoundName where
 
 instance ToConcrete A.QName C.QName where
   toConcrete = lookupQName AmbiguousConProjs
+
 
 instance ToConcrete A.ModuleName C.QName where
   toConcrete = lookupModule

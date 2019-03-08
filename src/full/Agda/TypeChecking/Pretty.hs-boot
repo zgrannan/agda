@@ -6,6 +6,7 @@ module Agda.TypeChecking.Pretty where
 import Agda.Syntax.Internal
 -- import Agda.Syntax.Literal
 
+import Agda.Syntax.Scope.Base (AllowAmbiguousNames)
 import Agda.TypeChecking.Monad.Base
 import Agda.Utils.Pretty (Doc)
 -- import qualified Agda.Utils.Pretty as P
@@ -16,6 +17,8 @@ sep, fsep, hsep, vcat :: [TCM Doc]          -> TCM Doc
 
 class PrettyTCM a where
     prettyTCM :: a -> TCM Doc
+    prettyTCM' :: AllowAmbiguousNames -> a -> TCM Doc
+    prettyTCM' = undefined
 
 instance PrettyTCM a => PrettyTCM (Closure a)
 instance PrettyTCM a => PrettyTCM [a]

@@ -1,5 +1,6 @@
 {-# LANGUAGE CPP                  #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE DefaultSignatures #-}
 
 -- To define <>, we need to add with GHC >= 8.4
 --
@@ -45,6 +46,7 @@ import qualified Agda.Syntax.Abstract.Pretty as AP
 import Agda.Syntax.Concrete.Pretty (bracesAndSemicolons)
 import qualified Agda.Syntax.Concrete.Pretty as CP
 import qualified Agda.Syntax.Info as A
+import Agda.Syntax.Scope.Base (AllowAmbiguousNames)
 import Agda.Syntax.Scope.Monad (withContextPrecedence)
 
 import Agda.TypeChecking.Monad
@@ -147,6 +149,9 @@ punctuate d ds = zipWith (<>) ds (replicate n d ++ [empty])
 
 class PrettyTCM a where
   prettyTCM :: a -> TCM Doc
+
+  prettyTCM' :: AllowAmbiguousNames -> a -> TCM Doc
+  prettyTCM' _ x = prettyTCM x
 
 -- | Pretty print with a given context precedence
 prettyTCMCtx :: PrettyTCM a => Precedence -> a -> TCM Doc
@@ -368,11 +373,14 @@ instance PrettyTCM Name where
 instance PrettyTCM QName where
   prettyTCM x = P.pretty <$> abstractToConcrete_ x
 
+  prettyTCM' t x = P.pretty <$> runAbsToCon (lookupQName t x)
+
 instance PrettyTCM ModuleName where
   prettyTCM x = P.pretty <$> abstractToConcrete_ x
 
 instance PrettyTCM ConHead where
   prettyTCM = prettyTCM . conName
+  prettyTCM' t = (prettyTCM' t) . conName
 
 instance PrettyTCM Telescope where
   prettyTCM tel = P.fsep . map P.pretty <$> (do

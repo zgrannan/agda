@@ -11,6 +11,8 @@ module Agda.Interaction.InteractionTop
 
 import Prelude hiding (null)
 
+import Debug.Trace (trace)
+
 import Control.Applicative hiding (empty)
 import Control.Concurrent
 import Control.Concurrent.Async
@@ -930,7 +932,7 @@ interpret (Cmd_intro pmLambda ii rng _) = do
   liftCommandMT (B.withInteractionId ii) $ case ss of
     []    -> do
       display_info $ Info_Intro $ "No introduction forms found."
-    [s]   -> give_gen WithoutForce ii rng s Intro
+    [s]   -> trace ("Got Cmd Intro (" ++ show s ++ ")") $ give_gen WithoutForce ii rng s Intro
     _:_:_ -> do
       display_info $ Info_Intro $
         sep [ "Don't know which constructor to introduce of"

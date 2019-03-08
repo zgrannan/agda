@@ -29,6 +29,8 @@ import qualified Data.Semigroup as Sgrp
 
 import Data.Data (Data)
 
+import Debug.Trace (trace, traceStack) 
+
 import Agda.Benchmarking
 
 import Agda.Syntax.Position
@@ -827,7 +829,7 @@ concreteNamesInScope scope =
 
 -- | Look up a name in the scope
 scopeLookup :: InScope a => C.QName -> ScopeInfo -> [a]
-scopeLookup q scope = map fst $ scopeLookup' q scope
+scopeLookup q scope = trace ("Lookup " ++ show q) $ map fst $ scopeLookup' q scope
 
 scopeLookup' :: forall a. InScope a => C.QName -> ScopeInfo -> [(a, Access)]
 scopeLookup' q scope =
@@ -913,7 +915,7 @@ data AllowAmbiguousNames
   | AmbiguousConProjs
       -- ^ Ambiguous constructors, projections, or pattern synonyms.
   | AmbiguousNothing
-  deriving (Eq)
+  deriving (Eq, Show)
 
 isNameInScope :: A.QName -> ScopeInfo -> Bool
 isNameInScope q scope =
@@ -921,18 +923,22 @@ isNameInScope q scope =
   Set.member q (scopeInScope scope)
 
 -- | Find the concrete names that map (uniquely) to a given abstract name.
---   Sort by length, shortest first.
+--   Sort by length, shortest first
 
 inverseScopeLookup :: Either A.ModuleName A.QName -> ScopeInfo -> [C.QName]
 inverseScopeLookup = inverseScopeLookup' AmbiguousConProjs
 
 inverseScopeLookup' :: AllowAmbiguousNames -> Either A.ModuleName A.QName -> ScopeInfo -> [C.QName]
-inverseScopeLookup' amb name scope = billToPure [ Scoping , InverseScopeLookup ] $
+inverseScopeLookup' amb name scope = traceStack "inverseScopeLookup'" $ billToPure [ Scoping , InverseScopeLookup ] $
   case name of
     Left  m -> best $ filter unambiguousModule $ findModule m
-    Right q -> best $ filter unambiguousName   $ findName q
+    Right q ->
+      let
+        r = best $ filter unambiguousName   $ findName q
+      in
+        trace ("Best is (" ++ show amb ++ ") " ++ show r ++ "from " ++ (show $ findName q)) r
   where
-    findName   x = maybe [] toList $ Map.lookup x (scopeInverseName scope)
+    findName   x = trace ("Lookup " ++ show x ++ " in " ++ show (scopeInverseName scope)) $ maybe [] toList $ Map.lookup x (scopeInverseName scope)
     findModule x = fromMaybe []    $ Map.lookup x (scopeInverseModule scope)
 
     len :: C.QName -> Int
@@ -952,11 +958,13 @@ inverseScopeLookup' amb name scope = billToPure [ Scoping , InverseScopeLookup ]
         || unique xs
         || amb == AmbiguousConProjs
            && or [ all ((kind ==) . anameKind) xs | kind <- [ConName, FldName, PatternSynName] ]
-      where xs = scopeLookup q scope
+      where
+        xs' = scopeLookup q scope
+        xs  = trace ("xs: " ++ show xs') xs'
 
 recomputeInverseScopeMaps :: ScopeInfo -> ScopeInfo
 recomputeInverseScopeMaps scope = billToPure [ Scoping , InverseScopeLookup ] $
-  scope { scopeInverseName   = nameMap
+  scope { scopeInverseName   = trace ("Recompute name map with current scope " ++ show (pretty current) ++ ": " ++ (show $ scopeInverseName scope) ++ " -> " ++ show nameMap) nameMap
         , scopeInverseModule = Map.fromList [ (x, findModule x) | x <- Map.keys moduleMap ++ Map.keys importMap ]
         , scopeInScope       = nsInScope $ everythingInScopeQualified scope
         }
